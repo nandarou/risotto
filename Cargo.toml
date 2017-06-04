@@ -1,0 +1,6 @@
+[package]
+name = "risotto"
+version = "0.1.0"
+authors = ["Sergey Orlovsky <sergey@test2trade.com>"]
+
+[dependencies]
