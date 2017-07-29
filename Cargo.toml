@@ -4,3 +4,7 @@ version = "0.1.0"
 authors = ["Sergey Orlovsky <sergey@test2trade.com>"]
 
 [dependencies]
+num = "0.1"
+num-bigint = "0.1"
+#openssl =  { path = "/Users/sergey/code/rust/rust-openssl/openssl" }
+openssl = "0.9"
