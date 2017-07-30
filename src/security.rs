@@ -34,7 +34,8 @@ fn test_decrypt() {
 fn des_decrypt(key: &[u8], encrypted: &[u8]) -> Result<Vec<u8>, openssl::error::ErrorStack> {
     let cipher = openssl::symm::Cipher::des_cbc();
     let iv = vec![0; 8];
-    let mut c = openssl::symm::Crypter::new(cipher, openssl::symm::Mode::Decrypt, key, Some(&iv)).unwrap();
+    let mut c = openssl::symm::Crypter::new(cipher, openssl::symm::Mode::Decrypt, key, Some(&iv))
+        .unwrap();
     // TODO patch rust-openssl to expose padding option:
     c.pad(false);
     let mut out = vec![0; encrypted.len() + cipher.block_size()];

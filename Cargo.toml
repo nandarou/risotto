@@ -8,3 +8,4 @@ num = "0.1"
 num-bigint = "0.1"
 #openssl =  { path = "/Users/sergey/code/rust/rust-openssl/openssl" }
 openssl = "0.9"
+libflate = "0.1"

@@ -1,3 +1,8 @@
+use std::io::prelude::*;
+extern crate libflate;
+
+use self::libflate::gzip::{EncodeOptions, HeaderBuilder, Os};
+
 pub fn from_hex(hex: &str) -> Vec<u8> {
     if hex.len() % 2 != 0 {
         panic!("Is not a valid hex, length should be even");
@@ -43,5 +48,24 @@ pub fn xor(op1: &[u8], op2: &[u8]) -> Vec<u8> {
     for i in 0..op1.len() {
         result.push(op1[i] ^ op2[i]);
     }
+    result
+}
+
+#[test]
+fn test_gzip() {
+    let input = [0, 1, 2, 3];
+    let expected = from_hex("1F8B08000000000000006360646206001386B98B04000000");
+    let gzipped = gzip(&input);
+
+    assert_eq!(expected, gzipped);
+}
+
+pub fn gzip(input: &[u8]) -> Vec<u8> {
+    let header = HeaderBuilder::new().modification_time(0).os(Os::Undefined(0)).finish();
+    let options = EncodeOptions::new().header(header).fixed_huffman_codes();
+    let mut encoder = libflate::gzip::Encoder::with_options(Vec::new(), options).unwrap();
+
+    let _ = encoder.write_all(&input);
+    let result = encoder.finish().into_result().unwrap();
     result
 }
