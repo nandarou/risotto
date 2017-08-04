@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub mod util;
 pub mod security;
@@ -9,47 +9,136 @@ mod tests {
 
     #[test]
     fn msg_returns_mti() {
-        let msg = IsoMsg::new_with_mti("0200");
+        let msg_0200 = IsoMsg::new_with_mti("0200");
+        assert_eq!(msg_0200.get_mti(), "0200");
 
-        assert_eq!(msg.get_mti(), "0200");
+        let msg_0210 = IsoMsg::new_with_mti("0210");
+        assert_eq!(msg_0210.get_mti(), "0210");
     }
 
     #[test]
     fn set_string_values() {
         let mut msg = IsoMsg::new();
+        msg.set_string(3, "001000");
         msg.set_string(70, "301");
-        let value = msg.get_string(70);
+        assert_eq!("001000", msg.get_string(3));
+        assert_eq!("301", msg.get_string(70));
+    }
 
-        assert_eq!(value, "301");
+    #[test]
+    fn test_pack_simple() {
+        let msg = IsoMsg::new_with_mti("0200");
+
+        let packed = msg.pack();
+        let expected = "<isomsg>
+  <f id=\"0\" v=\"0200\"/>
+</isomsg>";
+
+        assert_eq!(expected, packed);
+    }
+
+    #[test]
+    fn test_pack_with_fields() {
+        let mut msg = IsoMsg::new_with_mti("0200");
+        msg.set_string(64, "CAFEBABE");
+
+        let packed = msg.pack();
+        let expected = "<isomsg>
+  <f id=\"0\" v=\"0200\"/>
+  <f id=\"64\" v=\"CAFEBABE\"/>
+</isomsg>";
+
+        assert_eq!(expected, packed);
+    }
+
+    #[test]
+    fn test_pack_with_fields_and_subfields() {
+        let mut msg = IsoMsg::new_with_mti("0200");
+        msg.set_string(64, "CAFEBABE");
+
+        let mut f48 = IsoMsg::sub_field(48);
+        f48.set_string(1, "01");
+        f48.set_string(2, "02");
+        f48.set_string(11, "Eleven");
+
+        msg.set_field(48, f48);
+
+        let packed = msg.pack();
+        let expected = "<isomsg>
+  <f id=\"0\" v=\"0200\"/>
+  <isomsg id=\"48\">
+    <f id=\"1\" v=\"01\"/>
+    <f id=\"2\" v=\"02\"/>
+    <f id=\"11\" v=\"Eleven\"/>
+  </isomsg>
+  <f id=\"64\" v=\"CAFEBABE\"/>
+</isomsg>";
+
+        println!("expected:\n{}", expected);
+        assert_eq!(expected, packed);
+    }
+
+}
+
+trait IsoField {
+    fn to_string(&self, depth: i32) -> String;
+    fn get_value(&self) -> &str;
+}
+
+struct IsoFieldString {
+    id: i32,
+    value: String,
+}
+
+impl IsoFieldString {
+    fn new(id: i32, value: String) -> Self {
+        IsoFieldString {
+            id: id,
+            value: value,
+        }
     }
 }
 
-#[derive(Debug)]
-pub struct IsoField<T> {
-    value: T,
-}
+impl IsoField for IsoFieldString {
+    fn to_string(&self, depth: i32) -> String {
+        let mut packed = String::new();
+        for _ in 0..depth * 2 {
+            packed.push(' ');
+        }
 
-impl<T> IsoField<T> {
-    fn new(value: T) -> IsoField<T> {
-        IsoField { value: value }
+        packed.push_str(format!("<f id=\"{}\" v=\"{}\"/>\n",
+                                self.id,
+                                &self.value.to_string())
+            .as_str());
+        packed
     }
 
-    fn get(&self) -> &T {
-        &self.value
+    fn get_value(&self) -> &str {
+        self.value.as_str()
     }
 }
 
-#[derive(Debug)]
 pub struct IsoMsg {
-    fields: HashMap<i32, IsoField<String>>,
+    id: i32,
+    fields: BTreeMap<i32, Box<IsoField>>,
 }
 
 impl IsoMsg {
-    pub fn new() -> IsoMsg {
-        IsoMsg { fields: HashMap::new() }
+    pub fn new() -> Self {
+        IsoMsg {
+            id: 0,
+            fields: BTreeMap::new(),
+        }
     }
 
-    pub fn new_with_mti(mti: &str) -> IsoMsg {
+    pub fn sub_field(id: i32) -> Self {
+        IsoMsg {
+            id: id,
+            fields: BTreeMap::new(),
+        }
+    }
+
+    pub fn new_with_mti(mti: &str) -> Self {
         let mut msg = IsoMsg::new();
         msg.set_string(0, mti);
         msg
@@ -60,27 +149,56 @@ impl IsoMsg {
     }
 
     pub fn set_string(&mut self, field: i32, value: &str) {
-        self.fields.insert(field, IsoField::new(value.to_string()));
+        self.fields.insert(field,
+                           Box::new(IsoFieldString::new(field, value.to_string())));
+    }
+
+    pub fn set_field(&mut self, field: i32, value: IsoMsg) {
+        self.fields.insert(field, Box::new(value));
     }
 
     pub fn get_string(&self, field: i32) -> &str {
-        let value = self.fields.get(&field);
-        value.unwrap().get()
+        let v = self.fields.get(&field).unwrap();
+        v.get_value()
     }
 
-    // temp
-    pub fn build_echo(hwid: i32) -> String {
-        let echo = format!("<isomsg><f id=\"0\" v='0800'/><isomsg id=\"48\"><f id=\"1\" \
-                            v=\"ABCD{}\"/><f id=\"2\" v=\"16.00.00\"/></isomsg><f id=\"70\" \
-                            v=\"301\"/></isomsg>\n",
-                           hwid);
-        echo.to_string()
+    pub fn pack(&self) -> String {
+        let mut packed = String::new();
+        packed.push_str("<isomsg>\n");
+        for (_, v) in &self.fields {
+            let field = v.to_string(1);
+            packed.push_str(field.as_str());
+        }
+        packed.push_str("</isomsg>");
+        packed
+    }
+}
+
+impl IsoField for IsoMsg {
+    fn to_string(&self, depth: i32) -> String {
+        let mut packed = String::new();
+        for _ in 0..depth * 2 {
+            packed.push(' ');
+        }
+
+        packed.push_str(format!("<isomsg id=\"{}\">\n", self.id).as_str());
+        for (_, v) in &self.fields {
+            let field = v.to_string(1);
+            for _ in 0..depth * 2 {
+                packed.push(' ');
+            }
+
+            packed.push_str(field.as_str());
+        }
+        for _ in 0..depth * 2 {
+            packed.push(' ');
+        }
+
+        packed.push_str("</isomsg>\n");
+        packed
     }
 
-    // temp otra vez ;)
-    pub fn build_purchase() -> String {
-        "<isomsg><f id='0' v='0200'/><f id='53' v='FFFF9876543210E00001'/><f id='64' \
-         v='DEADBEEF'/></isomsg>\n"
-            .to_string()
+    fn get_value(&self) -> &str {
+        "get_value"
     }
 }

@@ -13,6 +13,17 @@ fn test_ansi_example() {
     assert_eq!(expected_mac, mac);
 }
 
+#[test]
+fn test_data_not_divisible_by_8() {
+    let expected_mac = util::from_hex("8BD6699E");
+
+    let pek = util::from_hex("042666B49184CFA368DE9628D0397BC9");
+    let data = util::from_hex("34303132333435363738393039443938370000000000000001");
+    let mac = generate_mac(pek.as_slice(), data.as_slice());
+
+    assert_eq!(expected_mac, mac);
+}
+
 fn des_encrypt(key: &[u8], data: &[u8]) -> Result<Vec<u8>, openssl::error::ErrorStack> {
     let cipher = openssl::symm::Cipher::des_ecb();
     let encrypted = openssl::symm::encrypt(cipher, key, None, data);
