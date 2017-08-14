@@ -2,28 +2,6 @@ extern crate openssl;
 
 use util;
 
-#[test]
-fn test_ansi_example() {
-    let expected_mac = util::from_hex("9CCC7817");
-
-    let pek = util::from_hex("042666B49184CFA368DE9628D0397BC9");
-    let data = util::from_hex("343031323334353637383930394439383700000000000000");
-    let mac = generate_mac(pek.as_slice(), data.as_slice());
-
-    assert_eq!(expected_mac, mac);
-}
-
-#[test]
-fn test_data_not_divisible_by_8() {
-    let expected_mac = util::from_hex("8BD6699E");
-
-    let pek = util::from_hex("042666B49184CFA368DE9628D0397BC9");
-    let data = util::from_hex("34303132333435363738393039443938370000000000000001");
-    let mac = generate_mac(pek.as_slice(), data.as_slice());
-
-    assert_eq!(expected_mac, mac);
-}
-
 fn des_encrypt(key: &[u8], data: &[u8]) -> Result<Vec<u8>, openssl::error::ErrorStack> {
     let cipher = openssl::symm::Cipher::des_ecb();
     let encrypted = openssl::symm::encrypt(cipher, key, None, data);
@@ -31,18 +9,7 @@ fn des_encrypt(key: &[u8], data: &[u8]) -> Result<Vec<u8>, openssl::error::Error
     encrypted
 }
 
-#[test]
-fn test_decrypt() {
-    let key = util::from_hex("68DE9628D03984C9");
-    let encrypted = util::from_hex("C5BC8EC1621EF5EE");
-    let expected = util::from_hex("F720DC72F93339DF");
-
-    let decrypted = des_decrypt(&key, &encrypted).unwrap();
-
-    assert_eq!(expected, decrypted);
-}
-
-fn des_decrypt(key: &[u8], encrypted: &[u8]) -> Result<Vec<u8>, openssl::error::ErrorStack> {
+pub fn des_decrypt(key: &[u8], encrypted: &[u8]) -> Result<Vec<u8>, openssl::error::ErrorStack> {
     let cipher = openssl::symm::Cipher::des_cbc();
     let iv = vec![0; 8];
     let mut c = openssl::symm::Crypter::new(cipher, openssl::symm::Mode::Decrypt, key, Some(&iv))
