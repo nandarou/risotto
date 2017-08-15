@@ -107,7 +107,7 @@ fn gzip_using_gzip(input: &[u8]) -> Vec<u8> {
     let mut v = vec![];
     match process.stdout.unwrap().read_to_end(&mut v) {
         Err(why) => panic!("couldn't read  stdout: {}", why.description()),
-        Ok(_) => println!("gzip responded with:\n{}", to_hex(&v)),
+        Ok(_) => {} //println!("gzip responded with:\n{}", to_hex(&v)),
     }
 
     v[9] = 0;
@@ -139,10 +139,10 @@ fn test_build_purchase() {
 pub fn build_purchase() -> IsoMsg {
     let mut purchase = IsoMsg::new_with_mti("0200");
     purchase.set_string(3, "001000");
-    purchase.set_string(4, "1200");
+    purchase.set_string(4, "2234");
     purchase.set_string(7, "0731174750");
-    purchase.set_string(11, "946812");
-    purchase.set_string(12, "20170813174750");
+    purchase.set_string(11, "946811");
+    purchase.set_string(12, "20170815174750");
     purchase.set_string(15, "310717");
     purchase.set_string(18, "5973");
     purchase.set_string(22, "90");
