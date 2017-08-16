@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 pub mod util;
 pub mod security;
+#[cfg(test)]
 mod tests;
 
 trait IsoField {

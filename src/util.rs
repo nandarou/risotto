@@ -1,4 +1,3 @@
-use std::io::prelude::*;
 extern crate libflate;
 extern crate flate2;
 extern crate deflate;
@@ -58,19 +57,19 @@ pub fn xor(op1: &[u8], op2: &[u8]) -> Vec<u8> {
 
 fn gzip_libflate(input: &[u8]) -> Vec<u8> {
     let header = HeaderBuilder::new().modification_time(0).os(Os::Undefined(0)).finish();
-    // let options = EncodeOptions::with_lz77(DefaultLz77Encoder::new()).header(header).fixed_huffman_codes();
     let lz77 = DefaultLz77Encoder::new();
     let options = EncodeOptions::with_lz77(lz77).header(header).fixed_huffman_codes();
     let mut encoder = libflate::gzip::Encoder::with_options(Vec::new(), options).unwrap();
 
+    // let mut encoder = libflate::gzip::Encoder::new(Vec::new()).unwrap();
     let _ = encoder.write_all(&input);
     let result = encoder.finish().into_result().unwrap();
     result
 }
 
 fn gzip_flate2(input: &[u8]) -> Vec<u8> {
-    let mut e = GzBuilder::new().write(Vec::new(), Compression::Default);
-    // let mut e = GzEncoder::new(Vec::new(), Compression::Default);
+    // let mut e = GzBuilder::new().write(Vec::new(), Compression::Default);
+    let mut e = GzEncoder::new(Vec::new(), Compression::Default);
     let _ = e.write(input);
     let mut compressed_bytes = e.finish().unwrap();
     compressed_bytes[9] = 0; // hack
@@ -79,11 +78,11 @@ fn gzip_flate2(input: &[u8]) -> Vec<u8> {
 }
 
 fn gzip_deflate(input: &[u8]) -> Vec<u8> {
-    let mut compressed_data = deflate::deflate_bytes_gzip_conf(input,
-                                                               deflate::Compression::Default,
-                                                               gzip_header::GzBuilder::new());
-    // let mut compressed_data = deflate::deflate_bytes(input);
-    compressed_data[9] = 0; // hack
+    // let mut compressed_data = deflate::deflate_bytes_gzip_conf(input,
+    // deflate::Compression::Default,
+    // gzip_header::GzBuilder::new());
+    let mut compressed_data = deflate::deflate_bytes(input);
+    // compressed_data[9] = 0; // hack
 
     compressed_data
 }
@@ -115,9 +114,10 @@ fn gzip_using_gzip(input: &[u8]) -> Vec<u8> {
 }
 
 pub fn gzip(input: &[u8]) -> Vec<u8> {
+    gzip_flate2(input)
     // gzip_deflate(input)
     // gzip_libflate(input)
-    gzip_using_gzip(input)
+    // gzip_using_gzip(input)
 }
 
 // temp
@@ -129,20 +129,13 @@ pub fn build_echo(hwid: i32) -> String {
     echo.to_string()
 }
 
-#[test]
-fn test_build_purchase() {
-    let purchase_xml = build_purchase().pack();
-    println!("Purchase:\n{}", purchase_xml);
-    // assert_eq!(1, 2);
-}
-
 pub fn build_purchase() -> IsoMsg {
     let mut purchase = IsoMsg::new_with_mti("0200");
     purchase.set_string(3, "001000");
-    purchase.set_string(4, "2234");
+    purchase.set_string(4, "2134");
     purchase.set_string(7, "0731174750");
-    purchase.set_string(11, "946811");
-    purchase.set_string(12, "20170815174750");
+    purchase.set_string(11, "146811");
+    purchase.set_string(12, "20170816074750");
     purchase.set_string(15, "310717");
     purchase.set_string(18, "5973");
     purchase.set_string(22, "90");

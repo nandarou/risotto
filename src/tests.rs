@@ -1,6 +1,4 @@
 use util;
-use util::from_hex;
-use util::xor;
 use util::*;
 use security::*;
 use IsoMsg;
@@ -48,7 +46,6 @@ fn test_real_response_mac() {
 
     assert_eq!(expected_mac, mac);
 }
-
 
 #[test]
 fn test_decrypt() {

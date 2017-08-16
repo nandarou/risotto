@@ -9,6 +9,6 @@ num-bigint = "0.1"
 #openssl =  { path = "/Users/sergey/code/rust/rust-openssl/openssl" }
 openssl = "0.9"
 libflate = { path = "/Users/sergey/code/rust/libflate" }
-flate2 = "0.2"
+flate2 = { version = "0.2", features = ["zlib"]}
 deflate = { path = "/Users/sergey/code/rust/deflate-rs" }
 gzip-header = "0.1"
