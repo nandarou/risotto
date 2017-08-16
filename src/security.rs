@@ -39,7 +39,6 @@ pub fn generate_mac(pek: &[u8], data: &[u8]) -> [u8; 4] {
         // TODO figure out why encrypt returns 16 bytes, instead of 8
         iv.split_off(8);
     }
-    // println!("iv = {:?}", util::to_hex(&iv));
 
     iv = des_decrypt(&right_mut, &iv).unwrap();
     iv.split_off(8);

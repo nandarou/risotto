@@ -1,15 +1,7 @@
-extern crate libflate;
 extern crate flate2;
-extern crate deflate;
-extern crate gzip_header;
 
-use self::libflate::lz77::{DefaultLz77Encoder, CompressionLevel};
-use self::libflate::gzip::{EncodeOptions, HeaderBuilder, Os};
-
-use self::flate2::{GzBuilder, Compression};
+use self::flate2::Compression;
 use self::flate2::write::GzEncoder;
-use std::process::{Command, Stdio};
-use std::error::Error;
 use std::io::prelude::*;
 use IsoMsg;
 
@@ -55,20 +47,7 @@ pub fn xor(op1: &[u8], op2: &[u8]) -> Vec<u8> {
     result
 }
 
-fn gzip_libflate(input: &[u8]) -> Vec<u8> {
-    let header = HeaderBuilder::new().modification_time(0).os(Os::Undefined(0)).finish();
-    let lz77 = DefaultLz77Encoder::new();
-    let options = EncodeOptions::with_lz77(lz77).header(header).fixed_huffman_codes();
-    let mut encoder = libflate::gzip::Encoder::with_options(Vec::new(), options).unwrap();
-
-    // let mut encoder = libflate::gzip::Encoder::new(Vec::new()).unwrap();
-    let _ = encoder.write_all(&input);
-    let result = encoder.finish().into_result().unwrap();
-    result
-}
-
 fn gzip_flate2(input: &[u8]) -> Vec<u8> {
-    // let mut e = GzBuilder::new().write(Vec::new(), Compression::Default);
     let mut e = GzEncoder::new(Vec::new(), Compression::Default);
     let _ = e.write(input);
     let mut compressed_bytes = e.finish().unwrap();
@@ -77,47 +56,8 @@ fn gzip_flate2(input: &[u8]) -> Vec<u8> {
     compressed_bytes
 }
 
-fn gzip_deflate(input: &[u8]) -> Vec<u8> {
-    // let mut compressed_data = deflate::deflate_bytes_gzip_conf(input,
-    // deflate::Compression::Default,
-    // gzip_header::GzBuilder::new());
-    let mut compressed_data = deflate::deflate_bytes(input);
-    // compressed_data[9] = 0; // hack
-
-    compressed_data
-}
-
-fn gzip_using_gzip(input: &[u8]) -> Vec<u8> {
-    let process = match Command::new("gzip")
-        .arg("-c")
-        .arg("-n")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn() {
-        Ok(p) => p,
-        Err(e) => panic!("failed to execute process: {}", e),
-    };
-
-    match process.stdin.unwrap().write_all(input) {
-        Ok(_) => {}
-        Err(e) => println!("oops {}", e),
-    }
-
-    let mut v = vec![];
-    match process.stdout.unwrap().read_to_end(&mut v) {
-        Err(why) => panic!("couldn't read  stdout: {}", why.description()),
-        Ok(_) => {} //println!("gzip responded with:\n{}", to_hex(&v)),
-    }
-
-    v[9] = 0;
-    v
-}
-
 pub fn gzip(input: &[u8]) -> Vec<u8> {
     gzip_flate2(input)
-    // gzip_deflate(input)
-    // gzip_libflate(input)
-    // gzip_using_gzip(input)
 }
 
 // temp
