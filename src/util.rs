@@ -1,4 +1,5 @@
 extern crate flate2;
+extern crate time;
 
 use self::flate2::Compression;
 use self::flate2::write::GzEncoder;
@@ -69,13 +70,13 @@ pub fn build_echo(hwid: i32) -> String {
     echo.to_string()
 }
 
-pub fn build_purchase() -> IsoMsg {
+pub fn build_purchase(stan: i32) -> IsoMsg {
     let mut purchase = IsoMsg::new_with_mti("0200");
     purchase.set_string(3, "001000");
     purchase.set_string(4, "2134");
     purchase.set_string(7, "0731174750");
-    purchase.set_string(11, "146811");
-    purchase.set_string(12, "20170816074750");
+    purchase.set_string(11, format!("{:06}", stan).as_str());
+    purchase.set_string(12, time::strftime("%Y%m%d%H%M%S", &time::now()).unwrap().as_str());
     purchase.set_string(15, "310717");
     purchase.set_string(18, "5973");
     purchase.set_string(22, "90");

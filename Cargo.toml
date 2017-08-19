@@ -7,3 +7,4 @@ authors = ["Sergey Orlovsky <sergey@test2trade.com>"]
 #openssl =  { path = "/Users/sergey/code/rust/rust-openssl/openssl" }
 openssl = "0.9"
 flate2 = { version = "0.2", features = ["zlib"]}
+time = "0.1"
