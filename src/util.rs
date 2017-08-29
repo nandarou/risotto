@@ -34,6 +34,13 @@ pub fn to_hex(bytes: &[u8]) -> String {
     bytes_as_hex.join("")
 }
 
+pub fn to_hex_from_nibbles(bytes: &[u8]) -> String {
+    let bytes_as_hex: Vec<String> = bytes.iter()
+        .map(|b| format!("{:01X}", b))
+        .collect();
+    bytes_as_hex.join("")
+}
+
 /// bitwise XOR each byte of two arrays
 /// assuming they're the same size
 pub fn xor(op1: &[u8], op2: &[u8]) -> Vec<u8> {
@@ -70,18 +77,25 @@ pub fn build_echo(hwid: i32) -> String {
     echo.to_string()
 }
 
-pub fn build_purchase(stan: i32) -> IsoMsg {
+pub fn build_purchase(terminal_id: i32, stan: i32) -> IsoMsg {
+    let time_now = time::now();
     let mut purchase = IsoMsg::new_with_mti("0200");
-    purchase.set_string(3, "001000");
+    purchase.set_string(3, "003000");
     purchase.set_string(4, "2134");
-    purchase.set_string(7, "0731174750");
+    purchase.set_string(7, time::strftime("%m%d%H%M%S", &time_now).unwrap().as_str());
     purchase.set_string(11, format!("{:06}", stan).as_str());
-    purchase.set_string(12, time::strftime("%Y%m%d%H%M%S", &time::now()).unwrap().as_str());
-    purchase.set_string(15, "310717");
+    purchase.set_string(12,
+                        time::strftime("%Y%m%d%H%M%S", &time_now).unwrap().as_str());
+    purchase.set_string(15, time::strftime("%d%m%y", &time_now).unwrap().as_str());
     purchase.set_string(18, "5973");
     purchase.set_string(22, "90");
     purchase.set_string(25, "00");
-    purchase.set_string(35, "5602549990000160=18011201006500009380");
+    // anz:
+    // purchase.set_string(35, "5602549990000160=18011201006500009380");
+    // mc:
+    purchase.set_string(35, "5163610055067910=18011201006500009380");
+    // visa:
+    // purchase.set_string(35, "4017954020796513=18011201006500009380");
     purchase.set_string(40, "120");
     purchase.set_string(41, "2");
 
@@ -100,11 +114,11 @@ pub fn build_purchase(stan: i32) -> IsoMsg {
     purchase.set_field(43, f43);
 
     let mut f48 = IsoMsg::sub_field(48);
-    f48.set_string(1, "424B1000000001");
+    f48.set_string(1, format!("212C000{:06}", terminal_id).as_str());
     f48.set_string(2, "17.21.00");
     purchase.set_field(48, f48);
 
-    purchase.set_binary(52, "8F8B18FE0FBD5434");
+    // purchase.set_binary(52, "8F8B18FE0FBD5434");
     purchase.set_binary(53, "FFFF9876543210E00001");
 
     let mut f61 = IsoMsg::sub_field(61);

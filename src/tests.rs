@@ -231,3 +231,16 @@ fn test_msg_1508_mac() {
 
     assert_eq!(expected_mac, mac);
 }
+
+#[test]
+fn test_encrypt_ansi_pin_block() {
+    let mut pek = util::from_hex("042666B49184CFA368DE9628D0397BC9");
+    // let mut pek = util::from_hex("042666B49184CFA368DE9628D0397BC9042666B49184CFA3");
+    let pin = vec![1, 2, 3, 4];
+    let pan = "5163610055067910";
+
+    let expected = "9EC05D3EE22A51AA";
+    let actual = encrypt_ansi_pin_block(pek.as_mut_slice(), pin.as_slice(), pan);
+
+    assert_eq!(from_hex(expected), (actual));
+}

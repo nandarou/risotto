@@ -50,3 +50,71 @@ pub fn generate_mac(pek: &[u8], data: &[u8]) -> [u8; 4] {
     }
     m
 }
+
+#[test]
+fn test_generate_ansi_pin_block() {
+    let pin = vec![1, 2, 3, 4];
+    let pan = "5163610055067910";
+
+    let expected = "041202EFFAAF986E";
+    let clear_pin_block = generate_ansi_pin_block(pin.as_slice(), pan);
+    let actual = util::to_hex(&clear_pin_block);
+
+    assert_eq!(expected, actual);
+}
+
+fn generate_ansi_pin_block(pin: &[u8], pan: &str) -> [u8; 8] {
+    if pin.len() > 12 {
+        panic!("Can't create pin block. Pin is too large");
+    }
+
+    let mut pin_block = [0xF; 16];
+    pin_block[0] = 0;
+    pin_block[1] = pin.len() as u8;
+    let mut i = 2;
+    for pin_digit in pin.iter() {
+        pin_block[i] = *pin_digit;
+        i = i + 1;
+    }
+
+    let mut pan_bytes = Vec::with_capacity(pan.len());
+    for c in pan.chars() {
+        let byte = c.to_digit(16).unwrap() as u8;
+        pan_bytes.push(byte);
+    }
+
+    i = 4;
+    for j in pan.len() - 13..pan.len() - 1 {
+        pin_block[i] = pin_block[i] ^ pan_bytes[j];
+        i = i + 1;
+    }
+
+    let mut r = [0; 8];
+    for j in 0..pin_block.len() {
+        if j % 2 == 0 {
+            r[j / 2] = 16 * pin_block[j];
+        } else {
+            r[j / 2] = r[j / 2] + pin_block[j];
+        }
+    }
+    r
+}
+
+pub fn encrypt_ansi_pin_block(pek: &mut [u8], pin: &[u8], pan: &str) -> [u8; 8] {
+    let clear_pin_block = generate_ansi_pin_block(pin, pan);
+    // let key = pek ^ 00000000000000FF00000000000000FF;
+    let (left, right) = pek.split_at(8);
+    let mut left = left.to_vec();
+    left[7] = left[7] ^ 0xFF;
+    let mut right = right.to_vec();
+    right[7] = right[7] ^ 0xFF;
+
+    let iv = des_encrypt(&left, &clear_pin_block).unwrap();
+    let iv = des_decrypt(&right, &iv).unwrap();
+    let iv = des_encrypt(&left, &iv).unwrap();
+    let mut r = [0; 8];
+    for i in 0..8 {
+        r[i] = iv[i];
+    }
+    r
+}
