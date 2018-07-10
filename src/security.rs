@@ -100,7 +100,7 @@ fn generate_ansi_pin_block(pin: &[u8], pan: &str) -> [u8; 8] {
     r
 }
 
-pub fn encrypt_ansi_pin_block(pek: &mut [u8], pin: &[u8], pan: &str) -> [u8; 8] {
+pub fn encrypt_ansi_pin_block(pek: &[u8], pin: &[u8], pan: &str) -> [u8; 8] {
     let clear_pin_block = generate_ansi_pin_block(pin, pan);
     // let key = pek ^ 00000000000000FF00000000000000FF;
     let (left, right) = pek.split_at(8);
